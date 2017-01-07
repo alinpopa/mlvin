@@ -18,4 +18,7 @@ Executable "mlvin"
   BuildDepends:
     threads,
     core,
-    async
+    async,
+    lwt,
+    cohttp.lwt,
+    tls
