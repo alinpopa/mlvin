@@ -3,15 +3,17 @@ open Cohttp
 open Cohttp_lwt_unix
 
 let display_body body =
-  Printf.printf "Body of length: %d\n" (String.length body);
-  Printf.printf "Raw body: '%s'\n" body;
-  body
+  Printf.printf "Body of length: %d\n" (String.length body)
+  |> fun _ -> Printf.printf "Raw body: '%s'\n" body
+  |> fun _ -> body
 
 let display_resp resp =
-  let code = resp |> Response.status |> Code.code_of_status in
-  Printf.printf "Response code: %d\n" code;
-  Printf.printf "Headers: %s\n" (resp |> Response.headers |> Header.to_string);
   resp
+  |> Response.status
+  |> Code.code_of_status
+  |> fun code -> Printf.printf "Response code: %d\n" code
+  |> fun _ -> Printf.printf "Headers: %s\n" (resp |> Response.headers |> Header.to_string)
+  |> fun _ -> resp
 
 let body =
   Client.get (Uri.of_string "https://api.ipify.org?format=json") >>= fun (resp, body) ->
