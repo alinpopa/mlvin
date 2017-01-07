@@ -21,4 +21,5 @@ Executable "mlvin"
     async,
     lwt,
     cohttp.lwt,
-    tls
+    tls,
+    yojson
