@@ -1,0 +1,7 @@
+(executables
+ ((names (main))
+  (libraries (cmdliner mlvin))))
+
+(install
+ ((section bin)
+  (files ((main.exe as mlvin)))))

@@ -1,5 +1,4 @@
 *.swp
 _build/
-setup.data
-setup.log
-mlvin.native
+.merlin
+mlvin.install

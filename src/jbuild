@@ -1,0 +1,4 @@
+(library
+  ((name mlvin)
+   (public_name mlvin)
+   (libraries (core lwt cohttp.lwt tls yojson websocket.lwt))))

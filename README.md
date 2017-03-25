@@ -1,6 +1,6 @@
 How to build:
 
 ```
-opam install oasis
+opam install jbuilder
 make
 ```
