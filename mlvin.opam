@@ -1,0 +1,20 @@
+opam-version: "1.2.2"
+version: "0.1"
+maintainer: "alin.popa@gmail.com"
+authors: ["Alin Popa"]
+homepage: "https://github.com/alinpopa/mlvin"
+bug-reports: "https://github.com/alinpopa/mlvin/issues"
+dev-repo: "https://github.com/alinpopa/mlvin.git"
+license: "LGPL-3 with OCaml linking exception"
+build: [
+  ["jbuilder" "build" "--only" "mlvin" "--root" "." "-j" jobs "@install"]
+]
+depends: [
+  "core"
+  "cmdliner"
+  "lwt"
+  "cohttp.lwt"
+  "tls"
+  "yojson"
+  "websocket.lwt"
+]
