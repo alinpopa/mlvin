@@ -18,8 +18,8 @@ Executable "mlvin"
   BuildDepends:
     threads,
     core,
-    async,
     lwt,
     cohttp.lwt,
     tls,
-    yojson
+    yojson,
+    websocket.lwt
