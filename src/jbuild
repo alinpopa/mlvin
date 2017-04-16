@@ -1,4 +1,5 @@
 (library
   ((name mlvin)
    (public_name mlvin)
+   (flags (:standard -warn-error A))
    (libraries (core lwt cohttp.lwt tls yojson websocket.lwt))))
