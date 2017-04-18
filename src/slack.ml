@@ -17,14 +17,14 @@ let display_resp resp =
   |> fun () -> resp
 
 let start_rtm token =
-  Client.get (Uri.of_string ("https://slack.com/api/rtm.start?token=" ^ token)) >>= fun (resp, body) ->
-    resp
-    |> display_resp
-    |> fun _ -> body
-    |> Cohttp_lwt_body.to_string >|= fun body ->
-        body
-        |> display_body
-        |> Yojson.Basic.from_string
+  let parse_body body =
+    Cohttp_lwt_body.to_string body >|= fun body ->
+      body |> display_body |> Yojson.Basic.from_string
+  in
+  let parse_response (resp, body) =
+    resp |> display_resp |> fun _ -> body |> parse_body
+  in
+  Client.get (Uri.of_string ("https://slack.com/api/rtm.start?token=" ^ token)) >>= parse_response
 
 let client uri =
   let open Frame in
