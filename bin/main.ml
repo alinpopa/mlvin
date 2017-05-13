@@ -10,17 +10,17 @@ let info =
   let doc = "My own Slack Bot." in
   Cmdliner.Term.info "mlvin" ~doc
 
-let rec restart_listener restart_r f =
+let rec restart_handler restart_r f =
   let open Async.Std in
   Pipe.read restart_r >>= (fun m ->
     match m with
     | `Ok "restart" ->
         printf "Restarting listener\n";
         f ();
-        restart_listener restart_r f
+        restart_handler restart_r f
     | _ ->
         printf "Got other message\n";
-        restart_listener restart_r f)
+        restart_handler restart_r f)
 
 let rec feedback_loop feedback_r restart_w =
   let open Async.Std in
@@ -37,30 +37,15 @@ let rec feedback_loop feedback_r restart_w =
     | `Eof ->
         Deferred.return (printf "Eof; closing the feedback loop\n"))
 
-let get_rtm_url json =
-  let exception InvalidAuthToken of string in
-  let member = Yojson.Basic.Util.member in
-  let json_to_string = Yojson.Basic.Util.to_string in
-  match (member "ok" json) with
-  | `Bool false ->
-      raise (InvalidAuthToken (json_to_string (member "error" json)))
-  | _ ->
-    json |> member "url" |> json_to_string
-
 let run token =
   let open Async.Std in
   let (restart_r, restart_w) = Pipe.create () in
   let (feedback_r, feedback_w) = Pipe.create () in
   let f () =
-    let module Handler = Async.Std.Handler in
-    let handler = Handler.create (fun x -> printf "Url: %s\n" x) in
-    let rtm = Slack.start_rtm token in
-    let url = rtm >>| (fun r -> get_rtm_url r) in
-    let _ = Handler.install handler url in
-    url >>| (fun url -> Slack.client (Uri.of_string url) feedback_w)
+    Slack.Handler.start token feedback_w
   in
   let _ = feedback_loop feedback_r restart_w in
-  let _ = restart_listener restart_r f in
+  let _ = restart_handler restart_r f in
   let _ = Pipe.write restart_w "restart" in
   never_returns (Scheduler.go ~raise_unhandled_exn:true ())
 
