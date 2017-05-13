@@ -24,13 +24,14 @@ let rec restart_listener restart_r f =
 
 let rec feedback_loop feedback_r restart_w =
   let open Async.Std in
+  let open Data.Feedback in
   Pipe.read feedback_r >>= (fun r ->
     match r with
-    | `Ok Data.KillMeNow f ->
+    | `Ok KillMeNow f ->
         f ();
         Pipe.write restart_w "restart" >>= (fun _ ->
           feedback_loop feedback_r restart_w)
-    | `Ok Data.Simple x ->
+    | `Ok Simple x ->
         printf "Got a simple msg: %s\n" x;
         feedback_loop feedback_r restart_w
     | `Eof ->
@@ -38,19 +39,19 @@ let rec feedback_loop feedback_r restart_w =
 
 let get_rtm_url json =
   let exception InvalidAuthToken of string in
-  let module Json = Yojson.Basic.Util in
-  match (Json.member "ok" json) with
+  let member = Yojson.Basic.Util.member in
+  let json_to_string = Yojson.Basic.Util.to_string in
+  match (member "ok" json) with
   | `Bool false ->
-      raise (InvalidAuthToken Json.(to_string (member "error" json)))
+      raise (InvalidAuthToken (json_to_string (member "error" json)))
   | _ ->
-    json |> Json.member "url" |> Json.to_string
+    json |> member "url" |> json_to_string
 
 let run token =
   let open Async.Std in
   let (restart_r, restart_w) = Pipe.create () in
   let (feedback_r, feedback_w) = Pipe.create () in
   let f () =
-    let module Json = Yojson.Basic.Util in
     let module Handler = Async.Std.Handler in
     let handler = Handler.create (fun x -> printf "Url: %s\n" x) in
     let rtm = Slack.start_rtm token in

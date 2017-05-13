@@ -1,45 +1,63 @@
-type ws_event = {
-  id: int;
-  type': string;
-  channel: string;
-  user: string;
-}
+module Event = struct
+  type t =
+    Ping of int |
+    Pong of int |
+    Msg of (int * string * string)
 
-type feedback = KillMeNow of (unit -> unit) | Simple of string
+  let to_json e =
+    let open Yojson.Basic in
+    let json =
+      match e with
+      | Ping id ->
+          `Assoc [
+            ("id", `Int id);
+            ("type", `String "ping")
+          ]
+      | Pong id ->
+          `Assoc [
+            ("id", `Int id);
+            ("type", `String "pong")
+          ]
+      | Msg (id, text, user) ->
+          `Assoc [
+            ("id", `Int id);
+            ("type", `String "message");
+            ("text", `String text);
+            ("user", `String user)
+          ]
+    in
+    to_string json
 
-type message =
-  Pong
-  | Msg of (string * string)
-  | Other of string
-
-let to_json event =
-  let open Yojson.Basic in
-  let json = `Assoc [
-    ("id", `Int event.id);
-    ("type", `String event.type');
-    ("channel", `String event.channel);
-    ("user", `String event.user)
-  ] in
-  to_string json
-
-let of_string event =
-  let open Yojson.Basic in
-  let open Yojson.Basic.Util in
-  let open Core.Std in
-  try
-    let value = Option.value in
-    let json = from_string event in
-    let type' = value (json |> member "type" |> to_string_option) ~default:"" in
-    let inner_data =
-      match type' with
-      | "pong" ->
-          Pong
-      | "message" ->
-          let text = value (json |> member "text" |> to_string_option) ~default:"" in
-          let user = value (json |> member "user" |> to_string_option) ~default:"" in
-          Msg (text, user)
-      | other ->
-          Other other in
-    Some inner_data
-  with
+  let of_json event =
+    let open Core.Std in
+    try
+      let open Option in
+      let from_string = Yojson.Basic.from_string in
+      let member = Yojson.Basic.Util.member in
+      let to_string_option = Yojson.Basic.Util.to_string_option in
+      let to_int_option = Yojson.Basic.Util.to_int_option in
+      let json = from_string event in
+      (json |> member "type" |> to_string_option) >>= (fun type' ->
+        let id = value (json |> member "id" |> to_int_option) ~default:0 in
+        match type' with
+        | "ping" ->
+            Some (Ping id)
+        | "pong" ->
+            Some (Pong id)
+        | "message" ->
+            let text = value (json |> member "text" |> to_string_option) ~default:"" in
+            let user = value (json |> member "user" |> to_string_option) ~default:"" in
+            Some (Msg (id, text, user))
+        | _ -> None)
+    with
     Yojson.Json_error _ -> None
+
+  let ping =
+    Ping (Core.Std.Random.int 999999)
+end
+
+module Feedback = struct
+  type t =
+    KillMeNow of (unit -> unit) |
+    Simple of string
+end
