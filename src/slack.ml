@@ -1,6 +1,8 @@
 open Core.Std
 open Async.Std
 
+module Logger = Log.Global
+
 module Handler = struct
   let ping_timeout = sec 60.0
   let ping_freq = sec 45.0
@@ -19,24 +21,26 @@ module Handler = struct
     Pipe.read r >>= (fun data ->
       match data with
       | `Ok d ->
-          printf "Raw data: '%s'\n" d;
-          let _ = match Event.of_json d with
-          | Some Pong _ ->
-              Pipe.write_without_pushback alive_w "alive"
-          | Some Msg (_, m, u) ->
-              printf "Got msg: %s, from user: %s\n" m u
-          | _ ->
-              printf "Invalid json message: %s\n" d in
+          Logger.info "Raw data: '%s'" d;
+          let _ =
+            match Event.of_json d with
+            | Some Pong _ ->
+                Pipe.write_without_pushback alive_w "alive"
+            | Some Msg (_, m, u) ->
+                Logger.info "Got msg: '%s', from user: '%s'" m u
+            | _ ->
+                Logger.info "Invalid json message: '%s'" d
+          in
           read_data r alive_w
       | `Eof ->
-          printf "Reader finished...\n";
+          Logger.info "Reader finished...";
           Deferred.unit)
   
   let rec check_alive alive_r feedback_w s =
     Clock.with_timeout ping_timeout (Pipe.read alive_r) >>= (fun r ->
       match r with
       | `Result _ ->
-          printf "Alive...\n";
+          Logger.info "Alive...";
           check_alive alive_r feedback_w s
       | `Timeout ->
           let shutdown_sequence = fun () -> Async_extra.Import.Socket.(shutdown s `Both) in
@@ -84,7 +88,7 @@ module Handler = struct
 
   let start token feedback_w =
     let module AsyncHandler = Async.Std.Handler in
-    let handler = AsyncHandler.create (fun x -> printf "Url: %s\n" x) in
+    let handler = AsyncHandler.create (fun x -> Logger.info "Url: '%s'" x) in
     let rtm = start_rtm token in
     let url = rtm >>| (fun r -> get_rtm_url r) in
     let _ = AsyncHandler.install handler url in

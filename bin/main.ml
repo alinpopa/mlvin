@@ -2,6 +2,8 @@ open Core.Std
 open Mlvin
 open Cmdliner
 
+module Logger = Async.Std.Log.Global
+
 let token =
   let doc = "The Slack API access token" in
   Cmdliner.Arg.(required & opt (some string) None & info ["t"; "token"] ~docv:"TOKEN" ~doc)
@@ -15,11 +17,11 @@ let rec restart_handler restart_r f =
   Pipe.read restart_r >>= (fun m ->
     match m with
     | `Ok "restart" ->
-        printf "Restarting listener\n";
+        Logger.info "Restarting listener";
         f ();
         restart_handler restart_r f
     | _ ->
-        printf "Got other message\n";
+        Logger.info "Got other message";
         restart_handler restart_r f)
 
 let rec feedback_loop feedback_r restart_w =
@@ -32,13 +34,15 @@ let rec feedback_loop feedback_r restart_w =
         Pipe.write restart_w "restart" >>= (fun _ ->
           feedback_loop feedback_r restart_w)
     | `Ok Simple x ->
-        printf "Got a simple msg: %s\n" x;
+        Logger.info "Got a simple msg: %s" x;
         feedback_loop feedback_r restart_w
     | `Eof ->
-        Deferred.return (printf "Eof; closing the feedback loop\n"))
+        Deferred.return (Logger.info "Eof; closing the feedback loop"))
 
 let run token =
   let open Async.Std in
+  let _ = Log.Global.set_level (Log.Level.of_string "Info") in
+  let _ = Log.Global.set_output [Log.Output.stdout ()] in
   let (restart_r, restart_w) = Pipe.create () in
   let (feedback_r, feedback_w) = Pipe.create () in
   let f () =
