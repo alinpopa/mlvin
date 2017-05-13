@@ -36,6 +36,15 @@ let rec feedback_loop feedback_r restart_w =
     | `Eof ->
         Deferred.return (printf "Eof; closing the feedback loop\n"))
 
+let get_rtm_url json =
+  let exception InvalidAuthToken of string in
+  let module Json = Yojson.Basic.Util in
+  match (Json.member "ok" json) with
+  | `Bool false ->
+      raise (InvalidAuthToken Json.(to_string (member "error" json)))
+  | _ ->
+    json |> Json.member "url" |> Json.to_string
+
 let run token =
   let open Async.Std in
   let (restart_r, restart_w) = Pipe.create () in
@@ -45,8 +54,7 @@ let run token =
     let module Handler = Async.Std.Handler in
     let handler = Handler.create (fun x -> printf "Url: %s\n" x) in
     let rtm = Slack.start_rtm token in
-    let url_json = rtm >>| fun r -> Json.member "url" r in
-    let url = url_json >>| fun r -> Json.to_string r in
+    let url = rtm >>| (fun r -> get_rtm_url r) in
     let _ = Handler.install handler url in
     url >>| (fun url -> Slack.client (Uri.of_string url) feedback_w)
   in
