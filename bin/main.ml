@@ -12,45 +12,35 @@ let info =
   let doc = "My own Slack Bot." in
   Cmdliner.Term.info "mlvin" ~doc
 
-let rec restart_handler restart_r f =
-  let open Async.Std in
-  Pipe.read restart_r >>= (fun m ->
-    match m with
-    | `Ok "restart" ->
-        Logger.info "Restarting listener";
-        f ();
-        restart_handler restart_r f
-    | _ ->
-        Logger.info "Got other message";
-        restart_handler restart_r f)
-
-let rec feedback_loop feedback_r restart_w =
+let rec loop opt_feedback_r f =
   let open Async.Std in
   let open Data.Feedback in
-  Pipe.read feedback_r >>= (fun r ->
-    match r with
-    | `Ok KillMeNow f ->
-        f ();
-        Pipe.write restart_w "restart" >>= (fun _ ->
-          feedback_loop feedback_r restart_w)
-    | `Ok Simple x ->
-        Logger.info "Got a simple msg: %s" x;
-        feedback_loop feedback_r restart_w
-    | `Eof ->
-        Deferred.return (Logger.info "Eof; closing the feedback loop"))
+  let start =
+    match opt_feedback_r with
+    | Some r -> Deferred.return (r)
+    | None -> f ()
+  in
+  start >>= (fun feedback_r ->
+    Pipe.read feedback_r >>= (fun r ->
+      match r with
+      | `Ok KillMeNow kill_f ->
+          kill_f ();
+          Pipe.close_read feedback_r;
+          loop None f
+      | `Ok Simple x ->
+          Logger.info "Got a simple msg: %s" x;
+          loop (Some feedback_r) f
+      | `Eof ->
+          Deferred.return (Logger.info "Eof; closing the feedback loop")))
 
 let run token =
   let open Async.Std in
   let _ = Log.Global.set_level (Log.Level.of_string "Info") in
   let _ = Log.Global.set_output [Log.Output.stdout ()] in
-  let (restart_r, restart_w) = Pipe.create () in
-  let (feedback_r, feedback_w) = Pipe.create () in
   let f () =
-    Slack.Handler.start token feedback_w
+    Slack.Handler.start token
   in
-  let _ = feedback_loop feedback_r restart_w in
-  let _ = restart_handler restart_r f in
-  let _ = Pipe.write restart_w "restart" in
+  let _ = loop None f in
   never_returns (Scheduler.go ~raise_unhandled_exn:true ())
 
 let execute = Cmdliner.Term.(

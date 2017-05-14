@@ -3,7 +3,11 @@ open Async.Std
 
 module Logger = Log.Global
 
-module Handler = struct
+module Handler : sig
+  type t = Data.Feedback.t Pipe.Reader.t Deferred.t
+  val start : string -> t
+end = struct
+  type t = Data.Feedback.t Pipe.Reader.t Deferred.t
   let ping_timeout = sec 60.0
   let ping_freq = sec 45.0
 
@@ -15,7 +19,7 @@ module Handler = struct
     let http_get = Client.get (Uri.of_string ("https://slack.com/api/rtm.start?token=" ^ token)) in
     let string_body = http_get >>= fun (response, body) -> Body.to_string body in
     string_body >>| fun s -> Json.from_string s
-  
+
   let rec read_data r alive_w =
     let open Data in
     Pipe.read r >>= (fun data ->
@@ -35,7 +39,7 @@ module Handler = struct
       | `Eof ->
           Logger.info "Reader finished...";
           Deferred.unit)
-  
+
   let rec check_alive alive_r feedback_w s =
     Clock.with_timeout ping_timeout (Pipe.read alive_r) >>= (fun r ->
       match r with
@@ -45,11 +49,11 @@ module Handler = struct
       | `Timeout ->
           let shutdown_sequence = fun () -> Async_extra.Import.Socket.(shutdown s `Both) in
           Pipe.write feedback_w (Data.Feedback.KillMeNow shutdown_sequence))
-  
+
   let start_pinger socket_w () =
     Clock.every' ~continue_on_error:false ping_freq (fun () ->
       Pipe.write socket_w Data.Event.(to_json ping))
-  
+
   let client uri feedback_w =
     let host = Option.value_exn ~message:"no host in uri" Uri.(host uri) in
     let port = Option.value ~default:443 Uri_services.(tcp_port_of_uri uri) in
@@ -75,7 +79,7 @@ module Handler = struct
         read_data socket_r alive_w
     in
     Tcp.(with_connection (to_host_and_port host port) tcp_fun)
-   
+
   let get_rtm_url json =
     let exception InvalidAuthToken of string in
     let member = Yojson.Basic.Util.member in
@@ -86,11 +90,14 @@ module Handler = struct
     | _ ->
       json |> member "url" |> json_to_string
 
-  let start token feedback_w =
+  let start token =
+    let (feedback_r, feedback_w) = Pipe.create () in
     let module AsyncHandler = Async.Std.Handler in
     let handler = AsyncHandler.create (fun x -> Logger.info "Url: '%s'" x) in
     let rtm = start_rtm token in
     let url = rtm >>| (fun r -> get_rtm_url r) in
     let _ = AsyncHandler.install handler url in
-    url >>| (fun url -> client (Uri.of_string url) feedback_w)
+    url
+    >>| (fun url -> client (Uri.of_string url) feedback_w)
+    >>| (fun _ -> feedback_r)
 end
