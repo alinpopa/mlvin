@@ -34,6 +34,7 @@ module Event = struct
     let to_string_option = Yojson.Basic.Util.to_string_option in
     let to_int_option = Yojson.Basic.Util.to_int_option in
     let from_string = Yojson.Basic.from_string in
+    let try_with = Core.Std.Option.try_with in
     (try_with (fun () -> from_string event)) >>= (fun json ->
       (json |> member "type" |> to_string_option) >>= (fun type' ->
         let id = value (json |> member "id" |> to_int_option) ~default:0 in
