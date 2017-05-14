@@ -25,6 +25,7 @@ let rec loop opt_feedback_r f =
       match r with
       | `Ok KillMeNow kill_f ->
           kill_f ();
+          Logger.info "Restarting Slack handler.";
           Pipe.close_read feedback_r;
           loop None f
       | `Ok Simple x ->
