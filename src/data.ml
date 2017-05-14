@@ -28,15 +28,20 @@ module Event = struct
     in
     to_string json
 
-  let of_json event =
-    let open Core.Std in
+  let from_string_opt event =
+    let from_string = Yojson.Basic.from_string in
     try
-      let open Option in
-      let from_string = Yojson.Basic.from_string in
-      let member = Yojson.Basic.Util.member in
-      let to_string_option = Yojson.Basic.Util.to_string_option in
-      let to_int_option = Yojson.Basic.Util.to_int_option in
       let json = from_string event in
+      Some json
+    with
+    Yojson.Json_error _ -> None
+
+  let of_json event =
+    let open Core.Std.Option in
+    let member = Yojson.Basic.Util.member in
+    let to_string_option = Yojson.Basic.Util.to_string_option in
+    let to_int_option = Yojson.Basic.Util.to_int_option in
+    (from_string_opt event) >>= (fun json ->
       (json |> member "type" |> to_string_option) >>= (fun type' ->
         let id = value (json |> member "id" |> to_int_option) ~default:0 in
         match type' with
@@ -48,9 +53,7 @@ module Event = struct
             let text = value (json |> member "text" |> to_string_option) ~default:"" in
             let user = value (json |> member "user" |> to_string_option) ~default:"" in
             Some (Msg (id, text, user))
-        | _ -> None)
-    with
-    Yojson.Json_error _ -> None
+        | _ -> None))
 
   let ping =
     Ping (Core.Std.Random.int 999999)
