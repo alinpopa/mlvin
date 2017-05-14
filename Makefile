@@ -1,4 +1,4 @@
-.PHONY: clean build
+.PHONY: clean build utop
 
 all: build
 
@@ -9,3 +9,6 @@ clean:
 
 build:
 	jbuilder build @install
+
+utop:
+	jbuilder exec utop

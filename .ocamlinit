@@ -1,0 +1,6 @@
+#require "core";;
+#require "core.top";;
+#require "mlvin";;
+
+open Core.Std;;
+open Mlvin;;

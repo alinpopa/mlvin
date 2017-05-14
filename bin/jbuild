@@ -1,5 +1,6 @@
 (executables
  ((names (main))
+  (flags (:standard -warn-error A))
   (libraries (cmdliner mlvin))))
 
 (install

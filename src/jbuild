@@ -2,4 +2,4 @@
   ((name mlvin)
    (public_name mlvin)
    (flags (:standard -warn-error A))
-   (libraries (core lwt cohttp.lwt tls yojson websocket.lwt))))
+   (libraries (core ipaddr yojson async async_ssl async_extra cohttp.async websocket.async))))
