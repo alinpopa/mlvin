@@ -1,7 +1,7 @@
 open Mlvin
 open Cmdliner
 
-module Runner = Runner_async
+module Runner = Slack_runner_async.Run
 
 let token =
   let doc = "The Slack API access token" in
@@ -12,7 +12,7 @@ let info =
   Cmdliner.Term.info "mlvin" ~doc
 
 let execute = Cmdliner.Term.(
-  pure Runner.Run.run $ token)
+  pure Runner.run $ token)
 
 let () =
   match Cmdliner.Term.eval (execute, info) with

@@ -1,8 +1,6 @@
 module Logger = Async.Std.Log.Global
 
-module Run : sig
-  val run : string -> 'a
-end = struct
+module Run : Slack_runner.Run = struct
   let rec loop opt_feedback_r f =
     let open Async.Std in
     let open Data.Feedback in
