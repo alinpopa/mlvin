@@ -49,8 +49,8 @@ module Event = struct
             Some (Msg (id, text, user))
         | _ -> None))
 
-  let ping =
-    Ping (Core.Std.Random.int 999999)
+  let ping () =
+    Ping (Random.int 999999)
 end
 
 module Feedback = struct

@@ -11,10 +11,12 @@ let info =
   let doc = "My own Slack Bot." in
   Cmdliner.Term.info "mlvin" ~doc
 
-let execute = Cmdliner.Term.(
-  pure Runner.run $ token)
+let main =
+  let open Core.Std in
+  Random.init (int_of_float (Time.to_float (Time.now ())));
+  Cmdliner.Term.(pure Runner.run $ token)
 
 let () =
-  match Cmdliner.Term.eval (execute, info) with
+  match Cmdliner.Term.eval (main, info) with
   | `Error _ -> exit 1
   | _ -> exit 0

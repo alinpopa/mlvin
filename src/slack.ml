@@ -52,7 +52,7 @@ end = struct
 
   let start_pinger socket_w () =
     Clock.every' ~continue_on_error:false ping_freq (fun () ->
-      Pipe.write socket_w Data.Event.(to_json ping))
+      Pipe.write socket_w Data.Event.(to_json (ping ())))
 
   let client uri feedback_w =
     let host = Option.value_exn ~message:"no host in uri" Uri.(host uri) in
