@@ -13,7 +13,12 @@ module Run : Slack_runner.Run = struct
       Pipe.read feedback_r >>= (fun r ->
         match r with
         | `Ok KillMeNow kill_f ->
-            kill_f ();
+            let _ =
+              try
+                kill_f ();
+              with
+              | _ -> Logger.error "Got error while running the kill function, but will continue..."
+            in
             Logger.info "Restarting Slack handler.";
             Pipe.close_read feedback_r;
             loop None f
