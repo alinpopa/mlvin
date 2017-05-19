@@ -40,10 +40,10 @@ module Run : Slack_runner.Run = struct
         | `Ok Retry s ->
             Logger.info "Retrying with ... %s" s;
             Pipe.close_read feedback_r;
-            loop None f 
+            loop None f
         | `Eof ->
             Deferred.return (Logger.info "Eof; closing the feedback loop")))
-  
+
   let run token =
     let open Core.Std in
     let open Async.Std in
