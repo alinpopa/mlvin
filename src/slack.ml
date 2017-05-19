@@ -8,8 +8,8 @@ module Handler : sig
   val start : string -> t
 end = struct
   type t = Data.Feedback.t Pipe.Reader.t Deferred.t
-  let ping_timeout = sec 60.0
-  let ping_freq = sec 45.0
+  let ping_timeout = sec 20.0
+  let ping_freq = sec 15.0
 
   let start_rtm token =
     let open Async.Std.Deferred.Infix in
