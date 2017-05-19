@@ -10,14 +10,15 @@ module Run : Slack_runner.Run = struct
       | Some r ->
           Deferred.return (r)
       | None ->
-          try
-            f ()
-          with
-          | _ ->
-              let (restart_r, restart_w) = Pipe.create () in
-              let _ = Clock.after (sec 5.0) >>= fun () ->
-                Pipe.write restart_w (Data.Feedback.KillMeNow (fun () -> ())) in
-              Deferred.return (restart_r)
+          try_with (fun () -> f ()) >>= fun response ->
+            match response with
+            | Ok r ->
+                Deferred.return (r)
+            | Error _ ->
+                let (restart_r, restart_w) = Pipe.create () in
+                let _ = Clock.after (sec 5.0) >>= fun () ->
+                  Pipe.write restart_w (Data.Feedback.KillMeNow (fun () -> ())) in
+                Deferred.return (restart_r)
     in
     start >>= (fun feedback_r ->
       Pipe.read feedback_r >>= (fun r ->
