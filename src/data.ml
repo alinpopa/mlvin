@@ -56,5 +56,6 @@ end
 module Feedback = struct
   type t =
     KillMeNow of (unit -> unit) |
-    Simple of string
+    Simple of string |
+    Retry of string
 end

@@ -15,9 +15,10 @@ module Run : Slack_runner.Run = struct
             | Ok r ->
                 Deferred.return (r)
             | Error _ ->
+                let msg = Data.Feedback.Retry "got error, restarting handler" in
                 let (restart_r, restart_w) = Pipe.create () in
-                let _ = Clock.after (sec 5.0) >>= fun () ->
-                  Pipe.write restart_w (Data.Feedback.KillMeNow (fun () -> ())) in
+                let _ = Clock.after (sec 10.0) >>= fun () ->
+                  Pipe.write restart_w msg in
                 Deferred.return (restart_r)
     in
     start >>= (fun feedback_r ->
@@ -36,6 +37,10 @@ module Run : Slack_runner.Run = struct
         | `Ok Simple x ->
             Logger.info "Got a simple msg: %s" x;
             loop (Some feedback_r) f
+        | `Ok Retry s ->
+            Logger.info "Retrying with ... %s" s;
+            Pipe.close_read feedback_r;
+            loop None f 
         | `Eof ->
             Deferred.return (Logger.info "Eof; closing the feedback loop")))
   
