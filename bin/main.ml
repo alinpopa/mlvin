@@ -1,7 +1,7 @@
 open Mlvin
 open Cmdliner
 
-module Runner = Slack_runner_async.Run
+module Runner = Slack_runner.Make(Slack_runner_async.Runner)
 
 let token =
   let doc = "The Slack API access token" in
