@@ -12,8 +12,8 @@ let info =
   Cmdliner.Term.info "mlvin" ~doc
 
 let main =
-  let open Core.Std in
-  Random.init (int_of_float (Time.to_float (Time.now ())));
+  let open Core in
+  Random.init (int_of_float (Time.Span.to_sec (Time.to_span_since_epoch (Time.now ()))));
   Cmdliner.Term.(pure Runner.run $ token)
 
 let () =

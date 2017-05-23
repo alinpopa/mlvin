@@ -1,5 +1,5 @@
-open Core.Std
-open Async.Std
+open Core
+open Async
 
 module Logger = Log.Global
 
@@ -12,7 +12,7 @@ end = struct
   let ping_freq = sec 15.0
 
   let start_rtm token =
-    let open Async.Std.Deferred.Infix in
+    let open Async.Deferred.Infix in
     let module Client = Cohttp_async.Client in
     let module Body = Cohttp_async.Body in
     let module Json = Yojson.Basic in
@@ -66,7 +66,7 @@ end = struct
       else Deferred.return (socket_r, socket_w)) >>= fun (socket_r, socket_w) ->
         let module C = Cohttp in
         let extra_headers = C.Header.init () in
-        let open Async.Std.Log.Global in
+        let open Async.Log.Global in
         let socket_r, socket_w =
           W.client_ez
           ~extra_headers
@@ -92,7 +92,7 @@ end = struct
 
   let start token =
     let (feedback_r, feedback_w) = Pipe.create () in
-    let module AsyncHandler = Async.Std.Handler in
+    let module AsyncHandler = Async.Handler in
     let handler = AsyncHandler.create (fun x -> Logger.info "Url: '%s'" x) in
     let rtm = start_rtm token in
     let url = rtm >>| (fun r -> get_rtm_url r) in

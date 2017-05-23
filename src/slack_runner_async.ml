@@ -1,4 +1,4 @@
-module Logger = Async.Std.Log.Global
+module Logger = Async.Log.Global
 
 module Option = Mlvin.Option
 
@@ -10,8 +10,8 @@ module Runner : Slack_runner.Run = struct
     with _ -> Logger.error "Got error while running the kill function, but will continue..."
 
   let start opt_feedback_r f =
-    let open Async.Std in
-    let sec = Core.Std.sec in
+    let open Async in
+    let sec = Core.sec in
     let feedback = Option.(opt_feedback_r >>| Deferred.return) in
     Option.or_else feedback (fun () ->
       try_with f >>= function
@@ -24,7 +24,7 @@ module Runner : Slack_runner.Run = struct
             Deferred.return restart_r)
 
   let rec loop opt_feedback_r f =
-    let open Async.Std in
+    let open Async in
     let open Data.Feedback in
     start opt_feedback_r f >>= (fun feedback_r ->
       Pipe.read feedback_r >>= function
@@ -44,8 +44,8 @@ module Runner : Slack_runner.Run = struct
             Deferred.return (Logger.info "Eof; closing the feedback loop"))
 
   let run (token : t) =
-    let open Core.Std in
-    let open Async.Std in
+    let open Core in
+    let open Async in
     let _ = Log.Global.set_level (Log.Level.of_string "Info") in
     let _ = Log.Global.set_output [Log.Output.stdout ()] in
     let f () =
