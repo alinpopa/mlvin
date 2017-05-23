@@ -1,5 +1,7 @@
 module Logger = Async.Std.Log.Global
 
+module Option = Mlvin.Option
+
 module Runner : Slack_runner.Run = struct
   type t = string
 
@@ -7,21 +9,24 @@ module Runner : Slack_runner.Run = struct
     try kill_f ()
     with _ -> Logger.error "Got error while running the kill function, but will continue..."
 
+  let start opt_feedback_r f =
+    let open Async.Std in
+    let sec = Core.Std.sec in
+    let feedback = Option.(opt_feedback_r >>| Deferred.return) in
+    Option.or_else feedback (fun () ->
+      try_with f >>= function
+        | Ok r -> Deferred.return r
+        | Error _ ->
+            let msg = Data.Feedback.Retry "got error, restarting handler" in
+            let (restart_r, restart_w) = Pipe.create () in
+            let _ = Clock.after (sec 10.0) >>= fun () ->
+              Pipe.write restart_w msg in
+            Deferred.return restart_r)
+
   let rec loop opt_feedback_r f =
     let open Async.Std in
-    let open Core.Std in
     let open Data.Feedback in
-    let feedback = Option.(opt_feedback_r >>| Deferred.return) in
-    let feedback_default = try_with f >>= function
-      | Ok r -> Deferred.return (r)
-      | Error _ ->
-          let msg = Data.Feedback.Retry "got error, restarting handler" in
-          let (restart_r, restart_w) = Pipe.create () in
-          let _ = Clock.after (sec 10.0) >>= fun () ->
-            Pipe.write restart_w msg in
-          Deferred.return (restart_r) in
-    let start () = Option.value feedback ~default:feedback_default in
-    start () >>= (fun feedback_r ->
+    start opt_feedback_r f >>= (fun feedback_r ->
       Pipe.read feedback_r >>= function
         | `Ok KillMeNow kill_f ->
             try_kill kill_f;
