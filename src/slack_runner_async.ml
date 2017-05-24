@@ -2,7 +2,7 @@ module Logger = Async.Log.Global
 
 module Option = Mlvin.Option
 
-module Runner : Slack_runner.Run = struct
+module Runner : (Run.Runner with type t = string) = struct
   type t = string
 
   let try_kill kill_f =

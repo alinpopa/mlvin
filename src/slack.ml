@@ -3,6 +3,11 @@ open Async
 
 module Logger = Log.Global
 
+module MakeRunner (Runner : Run.Runner) : (Run.Runner with type t = Runner.t) = struct
+  type t = Runner.t
+  let run x = Runner.run x
+end
+
 module Handler : sig
   type t = Data.Feedback.t Pipe.Reader.t Deferred.t
   val start : string -> t
