@@ -1,4 +1,5 @@
 opam-version: "1.2.2"
+name: "mlvin-lwt"
 version: "0.1"
 maintainer: "alin.popa@gmail.com"
 authors: ["Alin Popa"]
@@ -7,10 +8,12 @@ bug-reports: "https://github.com/alinpopa/mlvin/issues"
 dev-repo: "https://github.com/alinpopa/mlvin.git"
 license: "LGPL-3 with OCaml linking exception"
 build: [
-  ["jbuilder" "build" "--only" "mlvin" "--root" "." "-j" jobs "@install"]
+  ["jbuilder" "build" "-j" jobs "-p" name "@install"]
 ]
 depends: [
-  "core"
-  "cmdliner"
-  "yojson"
+  "mlvin"
+  "lwt"
+  "cohttp.lwt"
+  "tls"
+  "websocket.lwt"
 ]

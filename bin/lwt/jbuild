@@ -1,0 +1,9 @@
+(executables
+ ((names (main))
+  (flags (:standard -warn-error A))
+  (libraries (cmdliner mlvin mlvin-lwt))))
+
+(install
+ ((section bin)
+  (package mlvin-lwt)
+  (files ((main.exe as mlvin-lwt)))))

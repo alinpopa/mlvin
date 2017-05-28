@@ -1,10 +1,12 @@
 (library
-  ((flags (:standard -warn-error A))
-   (libraries (
-               core
+  ((name mlvin_lwt)
+   (public_name mlvin-lwt)
+   (flags (:standard -warn-error A))
+   (libraries (mlvin
                ipaddr
                yojson
-               cohttp.lwt
-               websocket.lwt
                lwt
-               lwt.unix))))
+               lwt.unix
+               cohttp
+               cohttp.lwt
+               websocket.lwt))))

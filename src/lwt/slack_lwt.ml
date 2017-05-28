@@ -15,7 +15,7 @@ module SlackHandler = struct
     string_body >|= fun s -> Json.from_string s
 end
 
-module Runner : (Run.Runner with type t = string) = struct
+module Runner : (Mlvin.Run.Runner with type t = string) = struct
   type t = string
 
   let rec client () =
