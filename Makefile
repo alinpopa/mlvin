@@ -8,7 +8,8 @@ clean:
 	-rm -rf src/.merlin
 	-rm -rf *.install
 
-build: async lwt
+build:
+	jbuilder build --only-packages=mlvin,mlvin-async,mlvin-lwt @install
 
 async:
 	jbuilder build --only-packages=mlvin,mlvin-async @install
