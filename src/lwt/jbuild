@@ -1,0 +1,10 @@
+(library
+  ((flags (:standard -warn-error A))
+   (libraries (
+               core
+               ipaddr
+               yojson
+               cohttp.lwt
+               websocket.lwt
+               lwt
+               lwt.unix))))
