@@ -1,0 +1,9 @@
+(executables
+ ((names (main))
+  (flags (:standard -warn-error A))
+  (libraries (cmdliner mlvin mlvin-async))))
+
+(install
+ ((section bin)
+  (package mlvin-async)
+  (files ((main.exe as mlvin-async)))))

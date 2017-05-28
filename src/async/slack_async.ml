@@ -3,6 +3,7 @@ open Async
 
 module Logger = Log.Global
 module Option = Mlvin.Option
+module Data = Mlvin.Data
 
 module SlackHandler = struct
   type t = Data.Feedback.t Pipe.Reader.t Deferred.t
@@ -100,7 +101,7 @@ module SlackHandler = struct
     >>| (fun _ -> feedback_r)
 end
 
-module Runner : (Run.Runner with type t = string) = struct
+module Runner : (Mlvin.Run.Runner with type t = string) = struct
   type t = string
 
   let try_kill kill_f =

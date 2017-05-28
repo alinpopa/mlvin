@@ -1,0 +1,20 @@
+opam-version: "1.2.2"
+name: "mlvin-async"
+version: "0.1"
+maintainer: "alin.popa@gmail.com"
+authors: ["Alin Popa"]
+homepage: "https://github.com/alinpopa/mlvin"
+bug-reports: "https://github.com/alinpopa/mlvin/issues"
+dev-repo: "https://github.com/alinpopa/mlvin.git"
+license: "LGPL-3 with OCaml linking exception"
+build: [
+  ["jbuilder" "build" "-j" jobs "-p" name "@install"]
+]
+depends: [
+  "mlvin"
+  "async"
+  "async_ssl"
+  "cohttp.async"
+  "yojson"
+  "websocket.async"
+]
