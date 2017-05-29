@@ -24,7 +24,7 @@ module SlackHandler = struct
     | _ ->
       json |> member "url" |> json_to_string
 
-  let client uri =
+  let client uri feedback_out =
     let open Websocket_lwt.Frame in
     let open Websocket_lwt in
     let open Lwt.Infix in
@@ -41,7 +41,9 @@ module SlackHandler = struct
         (*| Opcode.Text -> Lwt.fail Exit*)
         | Opcode.Ping -> send @@ Frame.create ~opcode:Opcode.Pong ()
         | Opcode.Pong -> Lwt.return_unit
-        | Opcode.Text -> Lwt_io.printlf "Got some text: %s" fr.content
+        | Opcode.Text ->
+            Lwt_io.write_line feedback_out fr.content
+            (*Lwt_io.printlf "Got some text: %s" fr.content*)
         | _ -> Lwt.fail Exit
       in
       let rec react_forever () = recv () >>= react >>= react_forever in
@@ -53,6 +55,11 @@ module SlackHandler = struct
     let fail_result = fun exn' -> Lwt.return (Error exn') in
     Lwt.try_bind f ok_result fail_result
 
+  let rec feedback_reader feedback_in =
+    let open Lwt.Infix in
+    Lwt_io.read_line feedback_in >>= (fun l ->
+      Lwt_io.printlf "LINE: %s" l) >>= (fun _ -> feedback_reader feedback_in)
+
   let start token =
     let (feedback_in, feedback_out) = Lwt_io.pipe () in
     let open Lwt.Infix in
@@ -63,12 +70,9 @@ module SlackHandler = struct
       let open Uri in
       with_scheme (of_string url) (some "https")) in
     let connect_client = url_with_scheme >>= (fun url ->
-      try_with (fun () -> client url)) in
-    let result = connect_client >|= (fun r ->
-      match r with
-      | Core.Ok _ -> Lwt_io.printl "OK"
-      | Core.Error e -> Lwt_io.printl ("Something happened: " ^ (Printexc.to_string e))) in
-    result >|= fun _ -> feedback_in
+      try_with (fun () -> client url feedback_out)) in
+    let _ = feedback_reader feedback_in in
+    connect_client 
 
 end
 
@@ -83,6 +87,10 @@ module Runner : (Mlvin.Run.Runner with type t = string) = struct
   let run (token : t) =
     let open Lwt.Infix in
     let f = SlackHandler.start token in
-    let _ = Lwt_main.run f in
+    let r = Lwt_main.run f in
+    let _ = match r with
+    | Core.Ok _ -> Lwt_io.printl "OK"
+    | Core.Error _ -> Lwt_io.printl "ERROR"
+    in
     Lwt_main.run (loop ())
 end
