@@ -44,22 +44,25 @@ module SlackHandler = struct
       with_connection ~ctx:default_ctx client uri) in
     connect_client >>= (fun (recv, send) ->
       let (alive_in, alive_out) = Lwt_io.pipe () in
-      let x () = Lwt_unix.with_timeout 90.0 (fun () -> Lwt_io.read_line alive_in) in
-      let rec check_timeout () = try_with x >>= (function
-        | Core.Error Lwt_unix.Timeout ->
-            Lwt_log.info "Timeout" >>= fun _ ->
-            send (Frame.create ~opcode:Opcode.Close ~content:"NEED TO RESTART" ()) >>= fun _ ->
-            Lwt_io.write_line feedback_out "restart"
-        | Core.Error _ -> Lwt_log.error "Other exception"
-        | Core.Ok result -> Lwt_log.info_f "OK: '%s'; reseting the ping timeout timer." result >>= fun _ -> check_timeout ()) in
+      let alive_reader () = Lwt_unix.with_timeout 90.0 (fun () -> Lwt_io.read_line alive_in) in
+      let rec check_timeout () =
+        try_with alive_reader >>=
+          (function
+            | Core.Error Lwt_unix.Timeout ->
+                Lwt_log.info "Timeout" >>= fun _ ->
+                send (Frame.create ~opcode:Opcode.Close ~content:"NEED TO RESTART" ()) >>= fun _ ->
+                Lwt_io.write_line feedback_out "restart"
+            | Core.Error _ ->
+                Lwt_log.error "Other exception"
+            | Core.Ok result ->
+                Lwt_log.info_f "OK: '%s'; reseting the ping timeout timer." result >>= fun _ -> check_timeout ()) in
       let _ = check_timeout () in
       let react fr =
         match fr.opcode with
         | Opcode.Ping ->
             let _ = Lwt_log.info "Got ping..." in
-            let _content = "{\"type\": \"ping\", \"id\": 100}" in
             let _ = Lwt_io.write_line alive_out "Got ping from server!!!" in
-            (send @@ Frame.create ~opcode:Opcode.Pong ())
+            send @@ Frame.create ~opcode:Opcode.Pong ()
         | Opcode.Pong ->
             Lwt_log.info "Got pong..."
         | Opcode.Text
