@@ -61,7 +61,7 @@ module SlackHandler = struct
     let tcp_fun socket socket_r socket_w =
       Async_extra.Import.Socket.(setopt socket Opt.nodelay true);
       (if scheme = "https" || scheme = "wss"
-      then Conduit_async_ssl.ssl_connect socket_r socket_w
+      then Conduit_async_ssl.ssl_connect ~version:Tlsv1_2 socket_r socket_w
       else Deferred.return (socket_r, socket_w)) >>= fun (socket_r, socket_w) ->
         let module C = Cohttp in
         let extra_headers = C.Header.init () in
