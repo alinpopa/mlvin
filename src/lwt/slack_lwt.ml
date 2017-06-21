@@ -67,6 +67,7 @@ module SlackHandler = struct
             Lwt_log.info "Got pong..."
         | Opcode.Text
         | Opcode.Binary ->
+            let _ = send @@ Frame.create ~content:"{\"type\": \"ping\", \"id\": 1001}" () in
             Lwt_io.write_line feedback_out fr.content
         | Opcode.Close ->
             Lwt.fail (WebsocketExit fr.content)
